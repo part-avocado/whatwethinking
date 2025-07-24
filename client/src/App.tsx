@@ -27,7 +27,7 @@ interface RateLimitStatus {
   waitTimeMinutes: number;
 }
 
-interface LeaderboardItem {
+interface LeaderboardItemData {
   theme: string;
   count: number;
   latestTimestamp: string;
@@ -375,7 +375,7 @@ function App() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [stats, setStats] = useState<Stats>({ totalThoughts: 0, todayThoughts: 0, uniqueThemes: 0 });
-  const [socket, setSocket] = useState<Socket | null>(null);
+
   const [newThoughtIds, setNewThoughtIds] = useState<Set<number>>(new Set());
   const [rateLimitStatus, setRateLimitStatus] = useState<RateLimitStatus>({
     canPost: true,
@@ -383,7 +383,7 @@ function App() {
     waitTimeMinutes: 0
   });
   const [countdown, setCountdown] = useState<string>('');
-  const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardItemData[]>([]);
   const [newLeaderboardThemes, setNewLeaderboardThemes] = useState<Set<string>>(new Set());
   
   const thoughtsRef = useRef<HTMLDivElement>(null);
@@ -396,7 +396,6 @@ function App() {
     const newSocket = io(API_BASE, {
       withCredentials: true
     });
-    setSocket(newSocket);
 
     // Load initial data
     loadThoughts();
@@ -423,20 +422,22 @@ function App() {
     });
 
     // Listen for leaderboard updates
-    newSocket.on('leaderboardUpdate', (updatedLeaderboard: LeaderboardItem[]) => {
-      const oldThemes = new Set(leaderboard.map(item => item.theme));
-      const newThemes = updatedLeaderboard
-        .filter(item => !oldThemes.has(item.theme))
-        .map(item => item.theme);
-      
-      setLeaderboard(updatedLeaderboard);
-      
-      if (newThemes.length > 0) {
-        setNewLeaderboardThemes(new Set(newThemes));
-        setTimeout(() => {
-          setNewLeaderboardThemes(new Set());
-        }, 3000);
-      }
+    newSocket.on('leaderboardUpdate', (updatedLeaderboard: LeaderboardItemData[]) => {
+      setLeaderboard(prevLeaderboard => {
+        const oldThemes = new Set(prevLeaderboard.map(item => item.theme));
+        const newThemes = updatedLeaderboard
+          .filter(item => !oldThemes.has(item.theme))
+          .map(item => item.theme);
+        
+        if (newThemes.length > 0) {
+          setNewLeaderboardThemes(new Set(newThemes));
+          setTimeout(() => {
+            setNewLeaderboardThemes(new Set());
+          }, 3000);
+        }
+        
+        return updatedLeaderboard;
+      });
     });
 
     return () => {
