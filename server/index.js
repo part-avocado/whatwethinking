@@ -218,7 +218,7 @@ const getLeaderboardData = (callback) => {
       normalized_content,
       COUNT(*) as count,
       MAX(timestamp) as latest_timestamp,
-      GROUP_CONCAT(DISTINCT content, '|||') as examples
+      GROUP_CONCAT(content) as examples
     FROM thoughts 
     WHERE datetime(timestamp) >= datetime('now', '-24 hours')
     GROUP BY normalized_content 
@@ -231,12 +231,18 @@ const getLeaderboardData = (callback) => {
       return callback([]);
     }
     
-    const leaderboard = rows.map(row => ({
-      theme: row.normalized_content,
-      count: row.count,
-      latestTimestamp: row.latest_timestamp,
-      examples: row.examples.split('|||').slice(0, 3) // Show up to 3 examples
-    }));
+    const leaderboard = rows.map(row => {
+      // Split examples and remove duplicates, then take first 3
+      const allExamples = row.examples.split(',');
+      const uniqueExamples = [...new Set(allExamples)].slice(0, 3);
+      
+      return {
+        theme: row.normalized_content,
+        count: row.count,
+        latestTimestamp: row.latest_timestamp,
+        examples: uniqueExamples
+      };
+    });
     
     callback(leaderboard);
   });
