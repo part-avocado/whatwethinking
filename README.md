@@ -145,7 +145,8 @@ Get platform statistics
 ```json
 {
   "totalThoughts": 1234,
-  "todayThoughts": 42
+  "todayThoughts": 42,
+  "uniqueThemes": 23
 }
 ```
 
@@ -159,6 +160,25 @@ Get current user's rate limit status
   "nextAllowedAt": "2024-01-01T13:00:00.000Z",
   "waitTimeMinutes": 45
 }
+```
+
+### GET /api/leaderboard
+Get trending thought themes (groups of similar thoughts)
+
+**Response:**
+```json
+[
+  {
+    "theme": "thinking about work",
+    "count": 5,
+    "latestTimestamp": "2024-01-01T12:30:00.000Z",
+    "examples": [
+      "Thinking about work deadlines",
+      "Work is stressing me out",
+      "Can't stop thinking about work"
+    ]
+  }
+]
 ```
 
 ## WebSocket Events
@@ -175,6 +195,21 @@ Broadcasted when a new thought is posted
 }
 ```
 
+### leaderboardUpdate
+Broadcasted when trending themes change
+
+**Payload:**
+```json
+[
+  {
+    "theme": "thinking about coffee",
+    "count": 3,
+    "latestTimestamp": "2024-01-01T12:00:00.000Z",
+    "examples": ["Need coffee", "Coffee thoughts", "Thinking about coffee"]
+  }
+]
+```
+
 ## Database Schema
 
 ### thoughts
@@ -183,7 +218,8 @@ CREATE TABLE thoughts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   content TEXT NOT NULL,
   timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-  user_id TEXT NOT NULL
+  user_id TEXT NOT NULL,
+  normalized_content TEXT NOT NULL
 );
 ```
 
